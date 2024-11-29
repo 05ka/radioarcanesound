@@ -107,6 +107,8 @@ def main():
         st.session_state.pause_duration = 8000
     if 'current_images' not in st.session_state:
         st.session_state.current_images = [None] * len(folders)
+    if 'audio_key' not in st.session_state:
+      st.session_state.audio_key = 0
     
     # Contenedor principal para las imágenes
     main_container = st.container()
@@ -114,7 +116,6 @@ def main():
         st.markdown('<div class="main-content">', unsafe_allow_html=True)
         cols = st.columns(len(folders))
         image_placeholders = [col.empty() for col in cols]
-        audio_elements = [col.empty() for col in cols]
         
         # Mostrar las imágenes actuales si existen
         for i, img in enumerate(st.session_state.current_images):
@@ -164,6 +165,9 @@ def main():
     indexes = {folder: cycle(range(len(folder_images[folder]))) for folder in folders}
     already_selected = set()
 
+    # Placeholder for audio player
+    audio_placeholder = st.empty()
+
     def update_display():
         nonlocal already_selected
 
@@ -172,6 +176,8 @@ def main():
             return
 
         already_selected.clear()
+        
+        audio_sources = []
 
         for i, folder in enumerate(folders):
             img_idx = next(indexes[folder])
@@ -186,7 +192,9 @@ def main():
             already_selected.add(folder_images[folder][img_idx])
 
             img_path = os.path.join(folder, folder_images[folder][img_idx])
-            sound_path = os.path.join(folder, folder_sounds[folder][img_idx])
+            file_name = folder_sounds[folder][img_idx]
+            audio_sources.append(f"/{folder}/{file_name}")
+
 
             # Display image with fade transition
             prev_img = cv2.imread(img_path) if st.session_state.current_images[i] is None else \
@@ -198,18 +206,34 @@ def main():
                 image_placeholders[i].image(pil_image, caption=None, use_container_width=True)
                 st.session_state.current_images[i] = pil_image
 
-            # Reproducir audio usando HTML5 audio
-            if st.session_state.playing:
-                audio_elements[i].audio(sound_path, start_time=0)
-                # Esperar un tiempo aproximado basado en la duración típica del audio
-                time.sleep(2.0 / st.session_state.speed)  # Ajusta este valor según la duración típica de tus audios
+        #Reproducir audio usando un reproductor HTML5 y Javascript
+        if st.session_state.playing:
+            audio_url = audio_sources[st.session_state.audio_key % len(audio_sources)]
+            audio_placeholder.audio(audio_url) #The magic happens here
+            st.session_state.audio_key += 1
+
 
         if st.session_state.playing:
             time.sleep((st.session_state.pause_duration / 1300) / st.session_state.speed)
 
+        
+    # Javascript for auto playing the audio
+    st.markdown(
+        """
+            <script>
+            var audio = document.querySelectorAll('audio');
+            if (audio.length > 0){
+                audio[audio.length -1].play();
+            }
+        
+            </script>
+        """, unsafe_allow_html=True
+    )
+
     # Automatic loop
     while True:
         update_display()
+        st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
