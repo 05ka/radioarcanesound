@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import random
 import cv2
-import pygame
 import numpy as np
 from itertools import cycle
 from PIL import Image
