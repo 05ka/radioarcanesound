@@ -96,6 +96,14 @@ def fade_transition(img1, img2, duration):
         dst = cv2.addWeighted(img1, 1 - i, img2, i, 0)
         yield dst
 
+def play_sound(filepath, volume=1.0, speed=1.0):
+    try:
+        data, samplerate = sf.read(filepath)
+        sd.play(data * volume, samplerate * speed)
+        sd.wait()
+    except Exception:
+        pass
+
 def main():
     # State initialization
     if 'playing' not in st.session_state:
@@ -184,11 +192,11 @@ def main():
                     break
 
             st.session_state.already_selected.add(folder_images[folder][img_idx])
-
+            
             img_path = os.path.join(folder, folder_images[folder][img_idx])
             sound_path = os.path.join(folder, folder_sounds[folder][img_idx])
 
-            # Image transition
+            # Image transition 
             prev_img = cv2.imread(img_path) if st.session_state.current_images[i] is None else \
                       cv2.cvtColor(np.array(st.session_state.current_images[i]), cv2.COLOR_RGB2BGR)
             
@@ -198,15 +206,7 @@ def main():
                 image_placeholders[i].image(pil_image, caption=None, use_container_width=True)
                 st.session_state.current_images[i] = pil_image
 
-            # Sound playback
-            if st.session_state.playing and st.session_state.audio_enabled:
-                try:
-                    sound = pygame.mixer.Sound(sound_path)
-                    sound.set_volume(st.session_state.volume)
-                    sound.play()
-                    time.sleep(sound.get_length() / st.session_state.speed)
-                except Exception:
-                    pass
+            play_sound(sound_path, st.session_state.volume, st.session_state.speed)
 
         if st.session_state.playing:
             time.sleep((st.session_state.pause_duration / 1300) / st.session_state.speed)
