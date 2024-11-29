@@ -7,6 +7,9 @@ import numpy as np
 from itertools import cycle
 from PIL import Image
 import time
+import simpleaudio as sa
+import wave
+
 
 st.set_page_config(layout="wide")
 
@@ -118,23 +121,17 @@ def main():
         st.session_state.already_selected = set()
     if 'image_placeholders' not in st.session_state:
         st.session_state.image_placeholders = []
-    if 'pygame_initialized' not in st.session_state:
-        st.session_state.pygame_initialized = False
-
-    # Load images and sounds only once
+    if 'audio_enabled' not in st.session_state:
+      st.session_state.audio_enabled = True
+    
+    #Load data only once
     if not st.session_state.folder_images:
-        for folder in folders:
-            pairs = load_all_matching_files(folder)
-            st.session_state.folder_images[folder] = [p[0] for p in pairs]
-            st.session_state.folder_sounds[folder] = [p[1] for p in pairs]
-        # Initialize indexes
-        st.session_state.indexes = {folder: cycle(range(len(st.session_state.folder_images[folder]))) for folder in folders}
-
-    # Initialize Pygame only once
-    if not st.session_state.pygame_initialized:
-        pygame.init()
-        pygame.mixer.init()
-        st.session_state.pygame_initialized = True
+      for folder in folders:
+          pairs = load_all_matching_files(folder)
+          st.session_state.folder_images[folder] = [p[0] for p in pairs]
+          st.session_state.folder_sounds[folder] = [p[1] for p in pairs]
+      # Initialize indexes
+      st.session_state.indexes = {folder: cycle(range(len(st.session_state.folder_images[folder]))) for folder in folders}
 
 
     # Main container for images
@@ -181,6 +178,15 @@ def main():
                 format="%.1f"
             )
         st.markdown('</div>', unsafe_allow_html=True)
+    
+    def play_sound(sound_path):
+       try:
+            wave_obj = sa.WaveObject.from_wave_file(sound_path)
+            play_obj = wave_obj.play()
+            play_obj.wait_done()
+       except Exception as e:
+           st.error(f"Error playing sound: {sound_path}. Error: {e}")
+           st.session_state.audio_enabled = False
 
     def update_display():
         if not st.session_state.playing:
@@ -197,7 +203,7 @@ def main():
             while st.session_state.folder_images[folder][img_idx] in st.session_state.already_selected:
                 img_idx = next(st.session_state.indexes[folder])
                 if img_idx == original_img_idx:
-                   break
+                    break
             
             st.session_state.already_selected.add(st.session_state.folder_images[folder][img_idx])
 
@@ -219,14 +225,9 @@ def main():
                 st.session_state.current_images[i] = pil_image
             
             # Play sound
-            if st.session_state.playing:
-                try:
-                  sound = pygame.mixer.Sound(sound_path)
-                  sound.set_volume(st.session_state.volume)
-                  sound.play()
-                  time.sleep(sound.get_length() / st.session_state.speed)
-                except pygame.error as e:
-                  st.error(f"Error loading sound: {sound_path}. Error: {e}")
+            if st.session_state.playing and st.session_state.audio_enabled:
+                play_sound(sound_path)
+            
 
         if st.session_state.playing:
             time.sleep((st.session_state.pause_duration / 1300) / st.session_state.speed)
