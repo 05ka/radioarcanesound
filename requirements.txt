@@ -1,5 +1,6 @@
 streamlit
-opencv-python
-Pillow
+opencv-python-headless
 numpy
-pygame #This is for local testing
+sounddevice
+soundfile
+Pillow
