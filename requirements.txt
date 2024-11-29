@@ -5,3 +5,5 @@ numpy
 sounddevice
 soundfile
 Pillow
+simpleaudio
+wave
