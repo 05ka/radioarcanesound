@@ -1,4 +1,5 @@
 streamlit
+pygame
 opencv-python-headless
 numpy
 sounddevice
