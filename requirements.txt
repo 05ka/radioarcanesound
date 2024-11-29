@@ -1,6 +1,5 @@
-streamlit
-opencv-python-headless
-numpy
-sounddevice
-soundfile
+streamlit>=1.12.0
+opencv-python
 Pillow
+numpy
+pygame
