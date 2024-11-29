@@ -2,6 +2,6 @@ streamlit
 opencv-python
 Pillow
 numpy
-simpleaudio
-wave
+sounddevice
+soundfile
 pygame #This is for local testing
