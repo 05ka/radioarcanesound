@@ -108,7 +108,9 @@ def main():
     if 'current_images' not in st.session_state:
         st.session_state.current_images = [None] * len(folders)
     if 'audio_key' not in st.session_state:
-      st.session_state.audio_key = 0
+        st.session_state.audio_key = 0
+    if 'folder_sounds_binary' not in st.session_state:
+        st.session_state.folder_sounds_binary = {}
     
     # Contenedor principal para las imágenes
     main_container = st.container()
@@ -161,6 +163,15 @@ def main():
         folder_images[folder] = [p[0] for p in pairs]
         folder_sounds[folder] = [p[1] for p in pairs]
 
+    # Load audio files and save into session_state.folder_sounds_binary
+    if not st.session_state.folder_sounds_binary:
+        for folder in folders:
+            st.session_state.folder_sounds_binary[folder] = []
+            for sound_file in folder_sounds[folder]:
+                sound_path = os.path.join(folder, sound_file)
+                with open(sound_path, "rb") as f:
+                    st.session_state.folder_sounds_binary[folder].append(f.read())
+    
     # Initialize indexes
     indexes = {folder: cycle(range(len(folder_images[folder]))) for folder in folders}
     already_selected = set()
@@ -177,7 +188,7 @@ def main():
 
         already_selected.clear()
         
-        audio_sources = []
+        audio_binaries = []
 
         for i, folder in enumerate(folders):
             img_idx = next(indexes[folder])
@@ -192,8 +203,7 @@ def main():
             already_selected.add(folder_images[folder][img_idx])
 
             img_path = os.path.join(folder, folder_images[folder][img_idx])
-            file_name = folder_sounds[folder][img_idx]
-            audio_sources.append(f"/{folder}/{file_name}")
+            audio_binaries.append(st.session_state.folder_sounds_binary[folder][img_idx])
 
 
             # Display image with fade transition
@@ -208,8 +218,8 @@ def main():
 
         #Reproducir audio usando un reproductor HTML5 y Javascript
         if st.session_state.playing:
-            audio_url = audio_sources[st.session_state.audio_key % len(audio_sources)]
-            audio_placeholder.audio(audio_url) #The magic happens here
+            audio_data = audio_binaries[st.session_state.audio_key % len(audio_binaries)]
+            audio_placeholder.audio(audio_data) #The magic happens here
             st.session_state.audio_key += 1
 
 
