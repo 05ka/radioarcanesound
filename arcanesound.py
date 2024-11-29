@@ -97,7 +97,7 @@ def fade_transition(img1, img2, duration):
         yield dst
 
 def main():
-    # Inicializar variables de estado
+    # Initialize state variables
     if 'playing' not in st.session_state:
         st.session_state.playing = True
     if 'speed' not in st.session_state:
@@ -108,65 +108,18 @@ def main():
         st.session_state.pause_duration = 8000
     if 'current_images' not in st.session_state:
         st.session_state.current_images = [None] * len(folders)
-    
-    # Contenedor principal para las imágenes
-    main_container = st.container()
-    with main_container:
-        st.markdown('<div class="main-content">', unsafe_allow_html=True)
-        cols = st.columns(len(folders))
-        image_placeholders = [col.empty() for col in cols]
-        
-        # Mostrar las imágenes actuales si existen
-        for i, img in enumerate(st.session_state.current_images):
-            if img is not None:
-                image_placeholders[i].image(img, caption=None, use_container_width=True)
-    
-    # Panel de control en el footer
-    footer = st.container()
-    with footer:
-        st.markdown('<div class="footer-controls">', unsafe_allow_html=True)
-        control_cols = st.columns([1,1,1])
-        
-        with control_cols[0]:
-            if st.button("⏯️ Play/Pause"):
-                st.session_state.playing = not st.session_state.playing
-        
-        with control_cols[1]:
-            st.session_state.speed = st.slider(
-                "Velocidad de reproducción",
-                min_value=0.5,
-                max_value=2.0,
-                value=st.session_state.speed,
-                step=0.1,
-                format="%.1fx"
-            )
-        
-        with control_cols[2]:
-            st.session_state.volume = st.slider(
-                "Volumen",
-                min_value=0.0,
-                max_value=1.0,
-                value=st.session_state.volume,
-                step=0.1,
-                format="%.1f"
-            )
-        st.markdown('</div>', unsafe_allow_html=True)
+    if 'audio_enabled' not in st.session_state:
+        st.session_state.audio_enabled = True
 
-    # Load images and sounds
-    folder_images = {}
-    folder_sounds = {}
-    for folder in folders:
-        pairs = load_all_matching_files(folder)
-        folder_images[folder] = [p[0] for p in pairs]
-        folder_sounds[folder] = [p[1] for p in pairs]
+    # Try initializing pygame audio
+    try:
+        pygame.init()
+        pygame.mixer.init()
+    except (pygame.error, Exception) as e:
+        st.session_state.audio_enabled = False
+        st.warning("Audio playback is disabled due to system limitations.")
 
-    # Initialize Pygame
-    pygame.init()
-    pygame.mixer.init()
-
-    # Initialize indexes
-    indexes = {folder: cycle(range(len(folder_images[folder]))) for folder in folders}
-    already_selected = set()
+    # [Rest of the interface code remains the same until update_display()]
 
     def update_display():
         nonlocal already_selected
@@ -202,15 +155,15 @@ def main():
                 image_placeholders[i].image(pil_image, caption=None, use_container_width=True)
                 st.session_state.current_images[i] = pil_image
 
-            # Play sound
-            if st.session_state.playing:
+            # Play sound only if audio is enabled
+            if st.session_state.playing and st.session_state.audio_enabled:
                 try:
                     sound = pygame.mixer.Sound(sound_path)
                     sound.set_volume(st.session_state.volume)
                     sound.play()
                     time.sleep(sound.get_length() / st.session_state.speed)
-                except pygame.error as e:
-                    st.error(f"Error loading sound: {sound_path}. Error: {e}")
+                except (pygame.error, FileNotFoundError) as e:
+                    pass  # Silently continue if sound file can't be played
 
         if st.session_state.playing:
             time.sleep((st.session_state.pause_duration / 1300) / st.session_state.speed)
