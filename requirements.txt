@@ -1,9 +1,7 @@
 streamlit
-pygame
-opencv-python-headless
-numpy
-sounddevice
-soundfile
+opencv-python
 Pillow
+numpy
 simpleaudio
 wave
+pygame #This is for local testing
